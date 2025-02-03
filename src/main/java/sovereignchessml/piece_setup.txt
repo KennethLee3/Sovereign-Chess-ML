@@ -1,0 +1,82 @@
+p 1 4 1 11 white 255 255 255
+k 0 8 white 255 255 255
+q 0 7 white 255 255 255
+r 0 4 white 255 255 255
+r 0 11 white 255 255 255
+n 0 5 white 255 255 255
+n 0 10 white 255 255 255
+b 0 6 white 255 255 255
+b 0 9 white 255 255 255
+p 14 4 14 11 black 0 0 0
+k 15 8 black 0 0 0
+q 15 7 black 0 0 0
+r 15 4 black 0 0 0
+r 15 11 black 0 0 0
+n 15 5 black 0 0 0
+n 15 10 black 0 0 0
+b 15 6 black 0 0 0
+b 15 9 black 0 0 0
+q 0 0 silver 192 192 192
+q 15 15 silver 192 192 192
+r 1 0 silver 192 192 192
+r 14 15 silver 192 192 192
+b 0 1 silver 192 192 192
+b 15 14 silver 192 192 192
+n 1 1 silver 192 192 192
+n 14 14 silver 192 192 192
+q 15 0 gold 255 215 0
+q 0 15 gold 255 215 0
+r 14 0 gold 255 215 0
+r 1 15 gold 255 215 0
+b 15 1 gold 255 215 0
+b 0 14 gold 255 215 0
+n 14 1 gold 255 215 0
+n 1 14 gold 255 215 0
+p 8 14 9 14 purple 128 0 128
+p 1 2 1 3 purple 128 0 128
+q 8 15 purple 128 0 128
+r 0 2 purple 128 0 128
+n 0 3 purple 128 0 128
+b 9 15 purple 128 0 128
+p 14 2 14 3 brown 139 69 19
+p 6 14 7 14 brown 139 69 19
+q 7 15 brown 139 69 19
+r 15 2 brown 139 69 19
+n 15 3 brown 139 69 19
+b 6 15 brown 139 69 19
+p 10 1 11 1 royal_blue 65 105 225
+p 2 14 3 14 royal_blue 65 105 225
+q 3 15 royal_blue 65 105 225
+r 11 0 royal_blue 65 105 225
+n 10 0 royal_blue 65 105 225
+b 2 15 royal_blue 65 105 225
+p 12 14 13 14 orange 255 165 0
+p 4 1 5 1 orange 255 165 0
+q 12 15 orange 255 165 0
+r 4 0 orange 255 165 0
+n 5 0 orange 255 165 0
+b 13 15 orange 255 165 0
+p 14 12 14 13 yellow 255 255 0
+p 6 1 7 1 yellow 255 255 0
+q 7 0 yellow 255 255 0
+r 15 13 yellow 255 255 0
+n 15 12 yellow 255 255 0
+b 6 0 yellow 255 255 0
+p 8 1 9 1 green 0 128 0
+p 1 12 1 13 green 0 128 0
+q 8 0 green 0 128 0
+r 0 13 green 0 128 0
+n 0 12 green 0 128 0
+b 9 0 green 0 128 0
+p 10 14 11 14 red 255 0 0
+p 2 1 3 1 red 255 0 0
+q 3 0 red 255 0 0
+r 11 15 red 255 0 0
+n 10 15 red 255 0 0
+b 2 0 red 255 0 0
+p 12 1 13 1 blue 0 0 255
+p 4 14 5 14 blue 0 0 255
+q 12 0 blue 0 0 255
+r 4 15 blue 0 0 255
+n 5 15 blue 0 0 255
+b 13 0 blue 0 0 255
