@@ -13,12 +13,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.DecimalFormat;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 public class SovereignChessML extends JFrame {
     public final int SIZE = 16;
     public final int INVALID_MOVE_PENALTY = -10;
     public final boolean AUTO_PLAY = true;
-    public final boolean CPU_VS_CPU = false;
+    public final boolean CPU_VS_CPU = true;
 
     private JButton[][] sqML;
     private JProgressBar progressBar;
@@ -164,15 +166,21 @@ public class SovereignChessML extends JFrame {
         new Thread(() -> {
             while (true) {
                 try {
+                    int moveIterator = 0;
                     double previousScore = getPositionEvaluation();
                     engine.currentBoard = engine.getCurrentBoardState(board);
                     engine.predictions = engine.model.output(engine.currentBoard).reshape(1, engine.NUM_MOVES);
-                    int engineMove = engine.predictions.argMax(1).getInt(0);
+                    int[] sortedPredictions = engine.getSortedPredictions();
+                    //int engineMove = engine.predictions.argMax(1).getInt(0);
+                    int engineMove = sortedPredictions[moveIterator];
                     engineMove = engine.invertMove(board, engineMove);
                     engine.target = engine.predictions.dup();
-                    if (!engine.checkMove(board, engineMove)) {
+                    while (!engine.checkMove(board, engineMove)) {
                         engine.target.putScalar(engineMove, INVALID_MOVE_PENALTY);
-                        engineMove = engine.getRandomLegalMove(board);
+                        moveIterator++;
+                        engineMove = sortedPredictions[moveIterator];
+                        engineMove = engine.invertMove(board, engineMove);
+                        engine.target = engine.predictions.dup();
                     }
                     engine.makeMove(board, engineMove);
                     double reward = engine.computeReward(board, previousScore, getPositionEvaluation());

@@ -24,6 +24,8 @@ import org.deeplearning4j.core.storage.StatsStorage;
 import java.io.File;
 import java.io.IOException;
 import java.util.Vector;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.text.DecimalFormat;
 
 public class ChessEngine {
@@ -211,35 +213,31 @@ public class ChessEngine {
     }
     
     public boolean checkMove(Board board, int move) {
+        /*
         int startRow = (move / SIZE / SIZE / SIZE) % SIZE;
         int startCol = (move / SIZE / SIZE) % SIZE;
         int endRow = (move / SIZE) % SIZE;
         int endCol = move % SIZE;
         Square start = new Square(startRow, startCol);
         Square end = new Square(endRow, endCol);
-        if (!board.isEmptySquare(start)) {
-            Piece p = board.makePiece(start);
-            if (p.isValidMove(board, start, end, (board.currPlayer + 1) % 2)) {
+        */
+        Move m = board.getMoveFromNum(move);
+        if (!board.isEmptySquare(m.start)) {
+            Piece p = board.makePiece(m.start);
+            if (p.isValidMove(board, m.start, m.end, (board.currPlayer + 1) % 2)) {
                 return true;
             }
         }
-        Move m = new Move(start, end, null);
-        m.printMove("Chosen engine");
+        //m.printMove("Chosen engine");
 
         return false;
     }
 
     public void makeMove(Board board, int move) {
-        int startRow = (move / SIZE / SIZE / SIZE) % SIZE;
-        int startCol = (move / SIZE / SIZE) % SIZE;
-        int endRow = (move / SIZE) % SIZE;
-        int endCol = move % SIZE;
-        Square start = new Square(startRow, startCol);
-        Square end = new Square(endRow, endCol);
+        Move m = board.getMoveFromNum(move);
         // Execute the move in your game engine
-        board.movePiece(start, end, board.players[board.currPlayer]);
+        board.movePiece(m.start, m.end, board.players[board.currPlayer]);
         // Print actual move
-        Move m = new Move(start, end, null);
         m.printMove("Actual engine");
     }
 
@@ -267,15 +265,38 @@ public class ChessEngine {
         return moveIndex;
     }
     
+    public int[] getSortedPredictions() {
+        Double[] probabilities = new Double[NUM_MOVES];
+        Integer[] indices = new Integer[NUM_MOVES];
+
+        // Extract data from INDArray into Java array
+        for (int i = 0; i < NUM_MOVES; i++) {
+            probabilities[i] = predictions.getDouble(i);
+            indices[i] = i;
+        }
+
+        // Sort indices based on probabilities in descending order
+        Arrays.sort(indices, Comparator.comparing(i -> -probabilities[i])); // Sort by probability descending
+
+        // Get the top-N indices
+        return Arrays.copyOfRange(Arrays.stream(indices).mapToInt(Integer::intValue).toArray(), 0, NUM_MOVES);
+    }
+    
     public int invertMove(Board board, int move) {
         if (board.currPlayer == 1) {
             return move;
         }
+        Move m = board.getMoveFromNum(move);
+        m.start.row = 15 - m.start.row;
+        m.end.row = 15 - m.end.row;
+        return board.getNumFromMove(m);
+        /*
         int startRow = 15 - (move / SIZE / SIZE / SIZE) % SIZE;
         int startCol = (move / SIZE / SIZE) % SIZE;
         int endRow = 15 - (move / SIZE) % SIZE;
         int endCol = move % SIZE;
         return (startRow * SIZE * SIZE * SIZE) + (startCol * SIZE * SIZE) + (endRow * SIZE) + endCol;
+        */
     }
 
 }

@@ -466,13 +466,20 @@ public class Board implements Cloneable {
         }
         return allMoves;
     }
-    public int getNumFromMove() {
-        // TODO
+    public int getNumFromMove(Move m) {
+        String s = "" + m.start.row + m.start.col + m.end.row + m.end.col;
+        for (Map.Entry<Integer, String> entry : possibleMoves.entrySet()) {
+            if (entry.getValue().equals(s)) {
+                return entry.getKey();
+            }
+        }
         return 0;
     }
-    public String getMoveFromNum() {
-        // TODO
-        return "0";
+    public Move getMoveFromNum(int num) {
+        String move = possibleMoves.get(num);
+        Square start = new Square(move.charAt(0) - '0', move.charAt(1) - '0');
+        Square end = new Square(move.charAt(2) - '0', move.charAt(3) - '0');
+        return new Move(start, end, null);
     }
     public int getPieceColor(int squareValue) {
         return squareValue % PAWN;
