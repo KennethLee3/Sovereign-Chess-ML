@@ -33,6 +33,7 @@ public class ChessEngine {
     public static final String MODEL_PATH = "chessModel.zip";
     public static final int NUM_CHANNELS = 12 * 6;
     public static final int SIZE = 16;
+    public final int NUM_MOVES = 11968;
     
     public ChessEngine() {
         // Load model if it exists, otherwise create a new one
@@ -133,7 +134,7 @@ public class ChessEngine {
                 .inputPreProcessor(2, new CnnToFeedForwardPreProcessor(((SIZE / 2) - 1), ((SIZE / 2) - 1), NUM_CHANNELS))
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(((SIZE / 2) - 1) * ((SIZE / 2) - 1) * NUM_CHANNELS) // Match the previous layer's output size
-                        .nOut(SIZE * SIZE * SIZE * SIZE) // All possible moves
+                        .nOut(NUM_MOVES) // All possible moves
                         .activation(Activation.SOFTMAX)
                         .build())
                 .build());

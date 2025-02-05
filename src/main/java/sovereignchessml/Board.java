@@ -6,6 +6,8 @@ import java.awt.Color;
 import java.io.*;
 import java.util.Scanner;
 import java.util.Vector;
+import java.util.Map;
+import java.util.HashMap;
 
 public class Board implements Cloneable {
     public static final int WHITE =      1;
@@ -37,12 +39,14 @@ public class Board implements Cloneable {
     public int currPlayer;
     public int moveNum;
     public Colors[] colorArray;
+    Map<Integer, String> possibleMoves;
     
     public Board(JButton[][] squares) {
         this.moveNum = 0;
         this.pieces = new int[SIZE][SIZE];
         this.colorSQ = new Square[SIZE][SIZE];
         this.colorArray = new Colors[13];
+        this.possibleMoves = new HashMap<>();
         for (int i = 0; i < SIZE; i++) {
             for (int j = 0; j < SIZE; j++) {
                 pieces[i][j] = EMPTY;
@@ -51,6 +55,7 @@ public class Board implements Cloneable {
         }
         initializeSquares(squares);
         initializePieces();
+        initializeMoves();
     }
     
     @Override
@@ -178,6 +183,93 @@ public class Board implements Cloneable {
         }
 
     }
+    private void initializeMoves() {
+        int mapCounter = 0;
+        for (int i = 0; i < SIZE; i++) {
+            for (int j = 0; j < SIZE; j++) {
+                // NORTH
+                for (int d = 1; d <= 8 && isInBounds(i + d, j); d++) {
+                    possibleMoves.put(mapCounter, "" + i + j + (i + d) + j);
+                    mapCounter++;
+                }
+                // SOUTH
+                for (int d = 1; d <= 8 && isInBounds(i - d, j); d++) {
+                    possibleMoves.put(mapCounter, "" + i + j + (i - d) + j);
+                    mapCounter++;
+                }
+                // EAST
+                for (int d = 1; d <= 8 && isInBounds(i, j + d); d++) {
+                    possibleMoves.put(mapCounter, "" + i + j + i + (j + d));
+                    mapCounter++;
+                }
+                // WEST
+                for (int d = 1; d <= 8 && isInBounds(i, j - d); d++) {
+                    possibleMoves.put(mapCounter, "" + i + j + i + (j - d));
+                    mapCounter++;
+                }
+                // NORTHEAST
+                for (int d = 1; d <= 8 && isInBounds(i + d, j + d); d++) {
+                    possibleMoves.put(mapCounter, "" + i + j + (i + d) + (j + d));
+                    mapCounter++;
+                }
+                // SOUTHEAST
+                for (int d = 1; d <= 8 && isInBounds(i - d, j + d); d++) {
+                    possibleMoves.put(mapCounter, "" + i + j + (i - d) + (j + d));
+                    mapCounter++;
+                }
+                // NORTHWEST
+                for (int d = 1; d <= 8 && isInBounds(i + d, j - d); d++) {
+                    possibleMoves.put(mapCounter, "" + i + j + (i + d) + (j - d));
+                    mapCounter++;
+                }
+                // SOUTHWEST
+                for (int d = 1; d <= 8 && isInBounds(i - d, j - d); d++) {
+                    possibleMoves.put(mapCounter, "" + i + j + (i - d) + (j - d));
+                    mapCounter++;
+                }
+                // NNE
+                if (isInBounds(i + 2, j + 1)) {
+                    possibleMoves.put(mapCounter, "" + i + j + (i + 2) + (j + 1));
+                    mapCounter++;
+                }
+                // ENE
+                if (isInBounds(i + 1, j + 2)) {
+                    possibleMoves.put(mapCounter, "" + i + j + (i + 1) + (j + 2));
+                    mapCounter++;
+                }
+                // SSE
+                if (isInBounds(i - 2, j + 1)) {
+                    possibleMoves.put(mapCounter, "" + i + j + (i - 2) + (j + 1));
+                    mapCounter++;
+                }
+                // ESE
+                if (isInBounds(i - 1, j + 2)) {
+                    possibleMoves.put(mapCounter, "" + i + j + (i - 1) + (j + 2));
+                    mapCounter++;
+                }
+                // NNW
+                if (isInBounds(i + 2, j - 1)) {
+                    possibleMoves.put(mapCounter, "" + i + j + (i + 2) + (j - 1));
+                    mapCounter++;
+                }
+                // WNW
+                if (isInBounds(i + 1, j - 2)) {
+                    possibleMoves.put(mapCounter, "" + i + j + (i + 1) + (j - 2));
+                    mapCounter++;
+                }
+                // SSW
+                if (isInBounds(i - 2, j - 1)) {
+                    possibleMoves.put(mapCounter, "" + i + j + (i - 2) + (j - 1));
+                    mapCounter++;
+                }
+                // WSW
+                if (isInBounds(i - 1, j - 2)) {
+                    possibleMoves.put(mapCounter, "" + i + j + (i - 1) + (j - 2));
+                    mapCounter++;
+                }
+            }
+        }
+    }
     public void updateBoard(Square startLoc, JButton[][] squares, JLabel turnLabel) {
         for (int i = 0; i < SIZE; i++) {
             for (int j = 0; j < SIZE; j++) {
@@ -247,7 +339,10 @@ public class Board implements Cloneable {
         return inputBoard;
     }
     public boolean isInBounds(Square square) {
-        return (square.row >= 0 && square.row < 16 && square.col >= 0 && square.col < 16);
+        return isInBounds(square.row, square.col);
+    }
+    public boolean isInBounds(int row, int col) {
+        return (row >= 0 && row < 16 && col >= 0 && col < 16);
     }
     public boolean isPromotionReady(Square square) {
         return (getPieceValue(square) == PAWN && square.row > 5 && square.row < 10 && square.col > 5 && square.col < 10);
@@ -370,6 +465,14 @@ public class Board implements Cloneable {
             }
         }
         return allMoves;
+    }
+    public int getNumFromMove() {
+        // TODO
+        return 0;
+    }
+    public String getMoveFromNum() {
+        // TODO
+        return "0";
     }
     public int getPieceColor(int squareValue) {
         return squareValue % PAWN;

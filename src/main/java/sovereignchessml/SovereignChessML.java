@@ -16,8 +16,9 @@ import java.text.DecimalFormat;
 
 public class SovereignChessML extends JFrame {
     public final int SIZE = 16;
+    public final int INVALID_MOVE_PENALTY = -10;
     public final boolean AUTO_PLAY = true;
-    public final boolean CPU_VS_CPU = true;
+    public final boolean CPU_VS_CPU = false;
 
     private JButton[][] sqML;
     private JProgressBar progressBar;
@@ -132,13 +133,10 @@ public class SovereignChessML extends JFrame {
                             engine.currentBoard = engine.getCurrentBoardState(board);
                             //System.out.println("Shape of currentBoard: " + Arrays.toString(engine.currentBoard.shape()));
                             //System.out.println(engine.model.summary());
-                            /* for (int layerIndex = 0; layerIndex < 3; layerIndex++) {
-                                System.out.println("Try layer " + layerIndex);
-                                System.out.println("Layer " + layerIndex + " output shape: " + Arrays.toString(engine.model.feedForward(engine.currentBoard).get(layerIndex).shape()));
-                            } */
-                            engine.predictions = engine.model.output(engine.currentBoard).reshape(1, 65536);
+                            engine.predictions = engine.model.output(engine.currentBoard).reshape(1, engine.NUM_MOVES);
                             int engineMove = engine.predictions.argMax(1).getInt(0);
                             if (!engine.checkMove(board, engineMove)) {
+                                if (engine.predictions != null) engine.target.putScalar(engineMove, INVALID_MOVE_PENALTY);
                                 engineMove = engine.getRandomLegalMove(board);
                             }
                             engine.makeMove(board, engineMove);
@@ -164,16 +162,16 @@ public class SovereignChessML extends JFrame {
     
     private void computerVScomputer() {
         new Thread(() -> {
-            while (CPU_VS_CPU) {
+            while (true) {
                 try {
                     double previousScore = getPositionEvaluation();
                     engine.currentBoard = engine.getCurrentBoardState(board);
-                    engine.predictions = engine.model.output(engine.currentBoard).reshape(1, 65536);
+                    engine.predictions = engine.model.output(engine.currentBoard).reshape(1, engine.NUM_MOVES);
                     int engineMove = engine.predictions.argMax(1).getInt(0);
                     engineMove = engine.invertMove(board, engineMove);
                     engine.target = engine.predictions.dup();
                     if (!engine.checkMove(board, engineMove)) {
-                        engine.target.putScalar(engineMove, -1);
+                        engine.target.putScalar(engineMove, INVALID_MOVE_PENALTY);
                         engineMove = engine.getRandomLegalMove(board);
                     }
                     engine.makeMove(board, engineMove);
