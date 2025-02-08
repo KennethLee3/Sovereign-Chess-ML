@@ -33,6 +33,13 @@ public abstract class Piece implements Cloneable {
     public int getValue() {
         return value;
     }
+    public boolean isLegalMove(Board board, Square start, Square end, int oppPlayer) {
+        // Check not only if move is valid but whether the piece is owned by the current player. 
+        if (board.getCurrentPlayer().checkColorControl(board.getPieceColor(start))) {
+            return isValidMove(board, start, end, oppPlayer);
+        }
+        return false;
+    }
 
     public abstract boolean isValidMove(Board board, Square start, Square end, int oppPlayer);
     public abstract double positionMultiplier(Board board, Square square);

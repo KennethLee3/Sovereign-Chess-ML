@@ -224,7 +224,7 @@ public class ChessEngine {
         Move m = board.getMoveFromNum(move);
         if (!board.isEmptySquare(m.start)) {
             Piece p = board.makePiece(m.start);
-            if (p.isValidMove(board, m.start, m.end, (board.currPlayer + 1) % 2)) {
+            if (p.isLegalMove(board, m.start, m.end, (board.currPlayer + 1) % 2)) {
                 return true;
             }
         }

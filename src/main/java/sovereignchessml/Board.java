@@ -189,82 +189,82 @@ public class Board implements Cloneable {
             for (int j = 0; j < SIZE; j++) {
                 // NORTH
                 for (int d = 1; d <= 8 && isInBounds(i + d, j); d++) {
-                    possibleMoves.put(mapCounter, "" + i + j + (i + d) + j);
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)((i + d)+'a') + (char)(j+'a'));
                     mapCounter++;
                 }
                 // SOUTH
                 for (int d = 1; d <= 8 && isInBounds(i - d, j); d++) {
-                    possibleMoves.put(mapCounter, "" + i + j + (i - d) + j);
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)((i - d)+'a') + (char)(j+'a'));
                     mapCounter++;
                 }
                 // EAST
                 for (int d = 1; d <= 8 && isInBounds(i, j + d); d++) {
-                    possibleMoves.put(mapCounter, "" + i + j + i + (j + d));
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)(i+'a') + (char)((j + d)+'a'));
                     mapCounter++;
                 }
                 // WEST
                 for (int d = 1; d <= 8 && isInBounds(i, j - d); d++) {
-                    possibleMoves.put(mapCounter, "" + i + j + i + (j - d));
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)(i+'a') + (char)((j - d)+'a'));
                     mapCounter++;
                 }
                 // NORTHEAST
                 for (int d = 1; d <= 8 && isInBounds(i + d, j + d); d++) {
-                    possibleMoves.put(mapCounter, "" + i + j + (i + d) + (j + d));
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)((i + d)+'a') + (char)((j + d)+'a'));
                     mapCounter++;
                 }
                 // SOUTHEAST
                 for (int d = 1; d <= 8 && isInBounds(i - d, j + d); d++) {
-                    possibleMoves.put(mapCounter, "" + i + j + (i - d) + (j + d));
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)((i - d)+'a') + (char)((j + d)+'a'));
                     mapCounter++;
                 }
                 // NORTHWEST
                 for (int d = 1; d <= 8 && isInBounds(i + d, j - d); d++) {
-                    possibleMoves.put(mapCounter, "" + i + j + (i + d) + (j - d));
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)((i + d)+'a') + (char)((j - d)+'a'));
                     mapCounter++;
                 }
                 // SOUTHWEST
                 for (int d = 1; d <= 8 && isInBounds(i - d, j - d); d++) {
-                    possibleMoves.put(mapCounter, "" + i + j + (i - d) + (j - d));
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)((i - d)+'a') + (char)((j - d)+'a'));
                     mapCounter++;
                 }
                 // NNE
                 if (isInBounds(i + 2, j + 1)) {
-                    possibleMoves.put(mapCounter, "" + i + j + (i + 2) + (j + 1));
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)((i + 2)+'a') + (char)((j + 1)+'a'));
                     mapCounter++;
                 }
                 // ENE
                 if (isInBounds(i + 1, j + 2)) {
-                    possibleMoves.put(mapCounter, "" + i + j + (i + 1) + (j + 2));
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)((i + 1)+'a') + (char)((j + 2)+'a'));
                     mapCounter++;
                 }
                 // SSE
                 if (isInBounds(i - 2, j + 1)) {
-                    possibleMoves.put(mapCounter, "" + i + j + (i - 2) + (j + 1));
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)((i - 2)+'a') + (char)((j + 1)+'a'));
                     mapCounter++;
                 }
                 // ESE
                 if (isInBounds(i - 1, j + 2)) {
-                    possibleMoves.put(mapCounter, "" + i + j + (i - 1) + (j + 2));
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)((i - 1)+'a') + (char)((j + 2)+'a'));
                     mapCounter++;
                 }
                 // NNW
                 if (isInBounds(i + 2, j - 1)) {
-                    possibleMoves.put(mapCounter, "" + i + j + (i + 2) + (j - 1));
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)((i + 2)+'a') + (char)((j - 1)+'a'));
                     mapCounter++;
                 }
                 // WNW
                 if (isInBounds(i + 1, j - 2)) {
-                    possibleMoves.put(mapCounter, "" + i + j + (i + 1) + (j - 2));
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)((i + 1)+'a') + (char)((j - 2)+'a'));
                     mapCounter++;
                 }
                 // SSW
                 if (isInBounds(i - 2, j - 1)) {
-                    possibleMoves.put(mapCounter, "" + i + j + (i - 2) + (j - 1));
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)((i - 2)+'a') + (char)((j - 1)+'a'));
                     mapCounter++;
                 }
                 // WSW
                 if (isInBounds(i - 1, j - 2)) {
-                    possibleMoves.put(mapCounter, "" + i + j + (i - 1) + (j - 2));
+                    possibleMoves.put(mapCounter, "" + (char)(i+'a') + (char)(j+'a') + (char)((i - 1)+'a') + (char)((j - 2)+'a'));
                     mapCounter++;
                 }
             }
@@ -309,7 +309,7 @@ public class Board implements Cloneable {
                     System.out.print("\u001B[31m" + " . " + "\u001B[0m");
                 }
             }
-            System.out.println("| " + (i + 1));
+            System.out.println("| " + (char)(i + 1));
         }
         System.out.println("   +------------------------------------------------+");
         System.out.println("     a  b  c  d  e  f  g  h  i  j  k  l  m  n  o  p");
@@ -450,6 +450,9 @@ public class Board implements Cloneable {
         }
         return distance;
     }
+    public Player getCurrentPlayer() {
+        return players[currPlayer];
+    }
     public Vector<Move> getAllLegalMoves(Square start, Player[] players, int currPlayer) {
         Piece thisPiece = makePiece(start);
         Vector<Move> allMoves = new Vector<>();
@@ -467,7 +470,7 @@ public class Board implements Cloneable {
         return allMoves;
     }
     public int getNumFromMove(Move m) {
-        String s = "" + m.start.row + m.start.col + m.end.row + m.end.col;
+        String s = "" + (char)(m.start.row+'a') + (char)(m.start.col+'a') + (char)(m.end.row+'a') + (char)(m.end.col+'a');
         for (Map.Entry<Integer, String> entry : possibleMoves.entrySet()) {
             if (entry.getValue().equals(s)) {
                 return entry.getKey();
@@ -477,8 +480,8 @@ public class Board implements Cloneable {
     }
     public Move getMoveFromNum(int num) {
         String move = possibleMoves.get(num);
-        Square start = new Square(move.charAt(0) - '0', move.charAt(1) - '0');
-        Square end = new Square(move.charAt(2) - '0', move.charAt(3) - '0');
+        Square start = new Square(move.charAt(0) - 'a', move.charAt(1) - 'a');
+        Square end = new Square(move.charAt(2) - 'a', move.charAt(3) - 'a');
         return new Move(start, end, null);
     }
     public int getPieceColor(int squareValue) {
