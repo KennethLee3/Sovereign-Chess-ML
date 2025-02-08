@@ -55,8 +55,8 @@ public class Player implements Cloneable {
             found = false;
             for (int i = 4; i < 12; i++) {
                 for (int j = 4; j < 12; j++) {
-                    // Check if square is colored and occupied. 
-                    if (board.colorSQ[i][j].getColor() != 0 && !board.isEmptySquare(i, j)) {
+                    // Check if square is colored, not owned by our opponent, and occupied. 
+                    if (board.colorSQ[i][j].getColor() != 0 && board.colorSQ[i][j].getColor() != board.getNextPlayer().colorOwn && !board.isEmptySquare(i, j)) {
                         // Check if piece is ours and this is not yet controlled.
                         if (checkColorControl(board.getPieceColor(board.pieces[i][j])) && 
                                 !checkColorControl(board.getPieceColor(board.colorSQ[i][j].getColor()))) {

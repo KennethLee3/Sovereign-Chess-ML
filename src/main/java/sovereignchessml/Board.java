@@ -42,7 +42,10 @@ public class Board implements Cloneable {
     Map<Integer, String> possibleMoves;
     
     public Board(JButton[][] squares) {
-        this.moveNum = 0;
+        this(squares, 0);
+    }
+    public Board(JButton[][] squares, int moveNum) {
+        this.moveNum = moveNum;
         this.pieces = new int[SIZE][SIZE];
         this.colorSQ = new Square[SIZE][SIZE];
         this.colorArray = new Colors[13];
@@ -322,6 +325,12 @@ public class Board implements Cloneable {
     }
     public boolean movePiece(Square start, Square end, Player p) {
         moveNum++;
+        // Check for checkmate.
+        boolean checkmate = false;
+        if (getPieceValue(end) == KING) {
+            checkmate = true;
+        }
+        
         // Move piece.
         pieces[end.row][end.col] = pieces[start.row][start.col];
         pieces[start.row][start.col] = EMPTY;
@@ -329,7 +338,8 @@ public class Board implements Cloneable {
         if (isPromotionReady(end)) {
             pieces[end.row][end.col] += (QUEEN - PAWN);
         }
-        return false;
+        
+        return checkmate;
     }
     public boolean movePiece(Move m) {
         return movePiece(m.start, m.end, m.player);
@@ -452,6 +462,9 @@ public class Board implements Cloneable {
     }
     public Player getCurrentPlayer() {
         return players[currPlayer];
+    }
+    public Player getNextPlayer() {
+        return players[(currPlayer + 1) % 2];
     }
     public Vector<Move> getAllLegalMoves(Square start, Player[] players, int currPlayer) {
         Piece thisPiece = makePiece(start);

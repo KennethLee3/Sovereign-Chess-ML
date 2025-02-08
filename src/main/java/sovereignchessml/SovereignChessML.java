@@ -13,12 +13,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.DecimalFormat;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-
 public class SovereignChessML extends JFrame {
     public final int SIZE = 16;
-    public final int INVALID_MOVE_PENALTY = -10;
+    public final int INVALID_MOVE_PENALTY = -2;
     public final boolean AUTO_PLAY = true;
     public final boolean CPU_VS_CPU = true;
 
@@ -119,11 +116,11 @@ public class SovereignChessML extends JFrame {
                 if (board.makePiece(startLoc).isValidMove(board, startLoc, endLoc, oppPlayer)) {
                     double previousScore = getPositionEvaluation();
                     engine.currentBoard = engine.getCurrentBoardState(board);
-                    board.movePiece(startLoc, endLoc, getCurrentPlayer());
+                    boolean checkmate = board.movePiece(startLoc, endLoc, getCurrentPlayer());
                     double reward = engine.computeReward(board, previousScore, getPositionEvaluation());
                     if (engine.predictions != null) {
                         engine.target = engine.predictions.dup();
-                        engine.target.putScalar((startLoc.row * SIZE * SIZE * SIZE) + (startLoc.col * SIZE * SIZE) + (endLoc.row * SIZE) + endLoc.col, reward);
+                        engine.target.putScalar(board.getNumFromMove(new Move(startLoc, endLoc, null)), reward);
                     }
                     switchPlayer();
                     Evaluation eval = conductEvaluation(board.players, board);
@@ -131,19 +128,22 @@ public class SovereignChessML extends JFrame {
                     board.updateBoard(startLoc, sqML, turnLabel);
                     if (board.currPlayer == 1) {
                         if (AUTO_PLAY) {
+                            int moveIterator = 0;
                             previousScore = getPositionEvaluation();
                             engine.currentBoard = engine.getCurrentBoardState(board);
-                            //System.out.println("Shape of currentBoard: " + Arrays.toString(engine.currentBoard.shape()));
-                            //System.out.println(engine.model.summary());
                             engine.predictions = engine.model.output(engine.currentBoard).reshape(1, engine.NUM_MOVES);
-                            int engineMove = engine.predictions.argMax(1).getInt(0);
-                            if (!engine.checkMove(board, engineMove)) {
-                                if (engine.predictions != null) engine.target.putScalar(engineMove, INVALID_MOVE_PENALTY);
-                                engineMove = engine.getRandomLegalMove(board);
-                            }
-                            engine.makeMove(board, engineMove);
-                            reward = engine.computeReward(board, previousScore, getPositionEvaluation());
+                            int[] sortedPredictions = engine.getSortedPredictions();
+                            int engineMove = sortedPredictions[moveIterator];
                             engine.target = engine.predictions.dup();
+                            while (!engine.checkMove(board, engineMove)) {
+                                engine.target.putScalar(engineMove, INVALID_MOVE_PENALTY);
+                                moveIterator++;
+                                engineMove = sortedPredictions[moveIterator];
+                                engineMove = engine.invertMove(board, engineMove);
+                                engine.target = engine.predictions.dup();
+                            }
+                            checkmate = engine.makeMove(board, engineMove) || checkmate;
+                            reward = engine.computeReward(board, previousScore, getPositionEvaluation());
                             engine.target.putScalar(engineMove, reward); // Update target for the played move
                             engine.saveModel(board.moveNum);
                             switchPlayer();
@@ -152,6 +152,17 @@ public class SovereignChessML extends JFrame {
                         }
                     }
                     printEvaluation(eval);
+                    if (checkmate) {
+                        board = new Board(sqML, board.moveNum);
+                        board.players = new Player[]{
+                            new Player("Computer0", board.WHITE),
+                            new Player("Computer1", board.BLACK)
+                        };
+                        board.currPlayer = 0;
+                        board.updateBoard(startLoc, sqML, turnLabel);
+                        printEvaluation(conductEvaluation(board.players, board));
+                    }
+                    
                 }
                 else {
                     printError("Invalid move.");
@@ -182,13 +193,22 @@ public class SovereignChessML extends JFrame {
                         engineMove = engine.invertMove(board, engineMove);
                         engine.target = engine.predictions.dup();
                     }
-                    engine.makeMove(board, engineMove);
+                    boolean checkmate = engine.makeMove(board, engineMove);
                     double reward = engine.computeReward(board, previousScore, getPositionEvaluation());
                     engine.target.putScalar(engine.invertMove(board, engineMove), reward); // Update target for the played move
                     engine.saveModel(board.moveNum);
 
                     // Switch player and update board
                     switchPlayer();
+                    if (checkmate) {
+                        board = new Board(sqML, board.moveNum);
+                        board.players = new Player[]{
+                            new Player("Player", board.WHITE),
+                            new Player("Computer", board.BLACK)
+                        };
+                        board.currPlayer = 0;
+                        board.updateBoard(startLoc, sqML, turnLabel);
+                    }
                     Evaluation eval = conductEvaluation(board.players, board);
 
                     // Schedule GUI updates on the EDT

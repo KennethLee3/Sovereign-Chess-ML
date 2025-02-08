@@ -53,18 +53,23 @@ public class ChessEngine {
             model = createNewModel();
             model.init();
         }
-        // Initialize the UI server
-        UIServer uiServer = UIServer.getInstance();
+        try {
+            // Initialize the UI server
+            UIServer uiServer = UIServer.getInstance();
 
-        // Create an in-memory StatsStorage instance
-        //StatsStorage statsStorage = new InMemoryStatsStorage();
-        StatsStorage statsStorage = new FileStatsStorage(new File(System.getProperty("java.io.tmpdir"), "ui-stats.dl4j"));
+            // Create an in-memory StatsStorage instance
+            //StatsStorage statsStorage = new InMemoryStatsStorage();
+            StatsStorage statsStorage = new FileStatsStorage(new File(System.getProperty("java.io.tmpdir"), "ui-stats.dl4j"));
 
-        // Attach the StatsStorage instance to the UI server
-        uiServer.attach(statsStorage);
+            // Attach the StatsStorage instance to the UI server
+            uiServer.attach(statsStorage);
 
-        // Add StatsListener to the model for monitoring
-        model.setListeners(new StatsListener(statsStorage, 1)); // 1 indicates logging every iteration
+            // Add StatsListener to the model for monitoring
+            model.setListeners(new StatsListener(statsStorage, 1)); // 1 indicates logging every iteration
+        }
+        catch (Exception e) {
+            System.out.println("No UIServer");
+        }
     }
 
     // This is not used for anything. 
@@ -116,6 +121,7 @@ public class ChessEngine {
 
     }
 
+    //TODO: Update learning rate to be higher when PvC and lower when CvC. 
     public MultiLayerNetwork createNewModel() {
         return new MultiLayerNetwork(new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.XAVIER)
@@ -143,11 +149,13 @@ public class ChessEngine {
     }
 
     public void saveModel(int moveNum) {
-        if (moveNum % 50 == 0) {
+        if (moveNum % 10 == 0) {
             model.fit(new DataSet(currentBoard, target));
         }
         
-        if (moveNum % 500 == 0) {
+        if (moveNum % 50 == 0) {
+            System.out.println();
+            System.out.println("Starting to save model... Don't close program.");
             String filePath = MODEL_PATH;
             File file = new File(filePath);
             try {
@@ -156,6 +164,8 @@ public class ChessEngine {
             catch (IOException e) {
                 System.err.println("oops");
             }
+            System.out.println("Model saved!");
+            System.out.println();
         }
     }
 
@@ -233,12 +243,12 @@ public class ChessEngine {
         return false;
     }
 
-    public void makeMove(Board board, int move) {
+    public boolean makeMove(Board board, int move) {
         Move m = board.getMoveFromNum(move);
-        // Execute the move in your game engine
-        board.movePiece(m.start, m.end, board.players[board.currPlayer]);
         // Print actual move
         m.printMove("Actual engine");
+        // Execute the move in your game engine
+        return board.movePiece(m.start, m.end, board.players[board.currPlayer]);
     }
 
     public int getRandomLegalMove(Board board) {
