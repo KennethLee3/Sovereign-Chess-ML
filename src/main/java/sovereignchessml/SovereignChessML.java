@@ -1,14 +1,7 @@
 package sovereignchessml;
 
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JProgressBar;
-import javax.swing.SwingUtilities;
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.GridLayout;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.DecimalFormat;
@@ -22,6 +15,8 @@ public class SovereignChessML extends JFrame {
     private JButton[][] sqML;
     private JProgressBar progressBar;
     private JLabel turnLabel;
+    private JPanel moveHistoryPanel;
+    private JScrollPane scrollPane;
     
     private Board board;
     private ChessEngine engine;
@@ -36,27 +31,35 @@ public class SovereignChessML extends JFrame {
         initComponentsX();
         
         board = new Board(sqML);
-        board.players = new Player[]{
-            new Player("Player", board.WHITE),
-            new Player("Computer", board.BLACK)
-        };
+        if (this.CPU_VS_CPU) {
+            engine = new ChessEngine(0.001);
+            board.players = new Player[]{
+                new Player("Computer1", board.WHITE),
+                new Player("Computer2", board.BLACK)
+            };
+        }
+        else {
+            engine = new ChessEngine(0.01);
+            board.players = new Player[]{
+                new Player("Player", board.WHITE),
+                new Player("Computer", board.BLACK)
+            };
+        }
         board.currPlayer = 0;
         board.updateBoard(startLoc, sqML, turnLabel);
         //board.updatePieces();
         printEvaluation(conductEvaluation(board.players, board));
-        
-        engine = new ChessEngine();
+        moveHistoryPanel.repaint();
         
     }
     
     private void initComponentsX() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        //setTitle("Sovereign Chess");
         setTitle("Sovereign Chess (ML)");
 
         sqML = new JButton[SIZE][SIZE];
         JPanel chessboardPanel = new JPanel(new GridLayout(SIZE, SIZE));
-
+        chessboardPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         for (int i = SIZE - 1; i >= 0; i--) {
             for (int j = 0; j < SIZE; j++) {
                 sqML[i][j] = new JButton();
@@ -78,9 +81,50 @@ public class SovereignChessML extends JFrame {
         turnLabel = new JLabel(" ");
         turnLabel.setForeground(Color.BLUE);
 
-        add(turnLabel, "North");
-        add(chessboardPanel);
-        add(progressBar, "South");  // Add progress bar at the bottom
+        // Create a fixed header panel for column labels
+        JPanel headerPanel = new JPanel(new GridLayout(1, 4));
+        headerPanel.setBackground(Color.DARK_GRAY);
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // Padding
+
+
+        JLabel moveNum = new JLabel("Turn", SwingConstants.CENTER);
+        JLabel player1 = new JLabel("Player1", SwingConstants.CENTER);
+        JLabel player2 = new JLabel("Player2", SwingConstants.CENTER);
+        JLabel evaluation = new JLabel("Eval", SwingConstants.CENTER);
+
+        moveNum.setForeground(Color.WHITE);
+        player1.setForeground(Color.WHITE);
+        player2.setForeground(Color.WHITE);
+        evaluation.setForeground(Color.WHITE);
+
+        headerPanel.add(moveNum);
+        headerPanel.add(player1);
+        headerPanel.add(player2);
+        headerPanel.add(evaluation);
+
+        // Move history panel (scrollable)
+        moveHistoryPanel = new JPanel();
+        moveHistoryPanel.setLayout(new GridBagLayout()); // Allows top-aligned moves
+        moveHistoryPanel.setBackground(Color.DARK_GRAY);
+        moveHistoryPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // Padding
+
+        scrollPane = new JScrollPane(moveHistoryPanel);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+
+        
+        // Sidebar container (Header stays fixed, moves scroll)
+        JPanel sidebarPanel = new JPanel(new BorderLayout());
+        sidebarPanel.add(headerPanel, BorderLayout.NORTH);
+        sidebarPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Main panel layout
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.add(turnLabel, BorderLayout.NORTH);
+        mainPanel.add(chessboardPanel, BorderLayout.CENTER);
+        mainPanel.add(progressBar, BorderLayout.SOUTH);
+
+        add(mainPanel, BorderLayout.CENTER);
+        add(sidebarPanel, BorderLayout.EAST);
 
         pack();
         setLocationRelativeTo(null);
@@ -122,8 +166,9 @@ public class SovereignChessML extends JFrame {
                         engine.target = engine.predictions.dup();
                         engine.target.putScalar(board.getNumFromMove(new Move(startLoc, endLoc, null)), reward);
                     }
-                    switchPlayer();
                     Evaluation eval = conductEvaluation(board.players, board);
+                    addMoveToHistory(board.possibleMoves.get(board.getNumFromMove(new Move(startLoc, endLoc, null))), null);
+                    switchPlayer();
                     startLoc = null;
                     board.updateBoard(startLoc, sqML, turnLabel);
                     if (board.currPlayer == 1) {
@@ -145,21 +190,23 @@ public class SovereignChessML extends JFrame {
                             checkmate = engine.makeMove(board, engineMove) || checkmate;
                             reward = engine.computeReward(board, previousScore, getPositionEvaluation());
                             engine.target.putScalar(engineMove, reward); // Update target for the played move
-                            engine.saveModel(board.moveNum);
-                            switchPlayer();
                             eval = conductEvaluation(board.players, board);
+                            addMoveToHistory(board.possibleMoves.get(engineMove), getFormattedEvaluation(eval.getScore()));
+                            switchPlayer();
                             board.updateBoard(null, sqML, turnLabel);
                         }
                     }
                     printEvaluation(eval);
                     if (checkmate) {
-                        board = new Board(sqML, board.moveNum);
+                        engine.saveModel();
+                        board = new Board(sqML);
                         board.players = new Player[]{
-                            new Player("Computer0", board.WHITE),
-                            new Player("Computer1", board.BLACK)
+                            new Player("Player", board.WHITE),
+                            new Player("Computer", board.BLACK)
                         };
                         board.currPlayer = 0;
                         board.updateBoard(startLoc, sqML, turnLabel);
+                        moveHistoryPanel.removeAll();
                         printEvaluation(conductEvaluation(board.players, board));
                     }
                     
@@ -196,20 +243,25 @@ public class SovereignChessML extends JFrame {
                     boolean checkmate = engine.makeMove(board, engineMove);
                     double reward = engine.computeReward(board, previousScore, getPositionEvaluation());
                     engine.target.putScalar(engine.invertMove(board, engineMove), reward); // Update target for the played move
-                    engine.saveModel(board.moveNum);
+                    if (board.moveNum % 200 == 0) {
+                        engine.saveModel();
+                    }
+                    Evaluation eval = conductEvaluation(board.players, board);
+                    addMoveToHistory(board.possibleMoves.get(engineMove), getFormattedEvaluation(eval.getScore()));
 
                     // Switch player and update board
                     switchPlayer();
                     if (checkmate) {
-                        board = new Board(sqML, board.moveNum);
+                        engine.saveModel();
+                        board = new Board(sqML);
                         board.players = new Player[]{
-                            new Player("Player", board.WHITE),
-                            new Player("Computer", board.BLACK)
+                            new Player("Computer1", board.WHITE),
+                            new Player("Computer2", board.BLACK)
                         };
                         board.currPlayer = 0;
                         board.updateBoard(startLoc, sqML, turnLabel);
+                        moveHistoryPanel.removeAll();
                     }
-                    Evaluation eval = conductEvaluation(board.players, board);
 
                     // Schedule GUI updates on the EDT
                     SwingUtilities.invokeLater(() -> {
@@ -238,6 +290,39 @@ public class SovereignChessML extends JFrame {
         System.out.println(errorMessage);
         System.out.println();
     }
+    public void addMoveToHistory(String playerMove, String evaluation) {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 2;
+        gbc.gridy = moveHistoryPanel.getComponentCount() / 4; // Each row has 4 elements
+        gbc.weightx = 1;
+        gbc.anchor = GridBagConstraints.NORTHWEST; // Align items at the top
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // Add turn number.
+        if (board.currPlayer == 0) {
+            JLabel moveNumLabel = new JLabel("" + (board.moveNum + 1) / 2);
+            moveNumLabel.setForeground(Color.WHITE);
+            gbc.gridx = 0;
+            moveHistoryPanel.add(moveNumLabel, gbc);
+            gbc.gridx = 1;
+        }
+        
+        // Add new move. 
+        JLabel playerLabel = new JLabel(playerMove);
+        playerLabel.setForeground(Color.WHITE);
+        moveHistoryPanel.add(playerLabel, gbc);
+        
+        // Add evaluation. 
+        if (board.currPlayer == 1) {
+            JLabel evaluationLabel = new JLabel(evaluation);
+            evaluationLabel.setForeground(Color.WHITE);
+            gbc.gridx = 3;
+            moveHistoryPanel.add(evaluationLabel, gbc);
+        }
+        
+        moveHistoryPanel.revalidate();
+        moveHistoryPanel.repaint();
+    }
     private Evaluation conductEvaluation(Player[] players, Board board) {
         // Start timer
         Evaluation eval = new Evaluation(0, 0, board, players, board.currPlayer);
@@ -249,12 +334,15 @@ public class SovereignChessML extends JFrame {
     private double getPositionEvaluation() {
         return new Evaluation(0, 0, board, board.players, board.currPlayer).evaluatePosition(board.players, board);
     }
-    private void printEvaluation(Evaluation eval) {
+    private String getFormattedEvaluation(double score) {
         String print = "";
-        if (eval.getScore() > 0.0) print = "+";
-        else if (eval.getScore() == 0.0) print = "=";
+        if (score > 0.0) print = "+";
+        else if (score == 0.0) print = "=";
         DecimalFormat df = new DecimalFormat("0.00");
-        progressBar.setString(print + df.format(eval.getScore()));
+        return print + df.format(score);
+    }
+    private void printEvaluation(Evaluation eval) {
+        progressBar.setString(getFormattedEvaluation(eval.getScore()));
         progressBar.setValue(eval.getProgressBarEvaluation(eval.getScore()));
     }
     public Player getCurrentPlayer() {
@@ -269,7 +357,7 @@ public class SovereignChessML extends JFrame {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 SovereignChessML game = new SovereignChessML();
-                game.setSize(800,820);
+                game.setSize(1000,800);
                 game.setVisible(true);
                 
                 if (game.CPU_VS_CPU) {

@@ -41,11 +41,9 @@ public class Board implements Cloneable {
     public Colors[] colorArray;
     Map<Integer, String> possibleMoves;
     
+
     public Board(JButton[][] squares) {
-        this(squares, 0);
-    }
-    public Board(JButton[][] squares, int moveNum) {
-        this.moveNum = moveNum;
+        this.moveNum = 0;
         this.pieces = new int[SIZE][SIZE];
         this.colorSQ = new Square[SIZE][SIZE];
         this.colorArray = new Colors[13];

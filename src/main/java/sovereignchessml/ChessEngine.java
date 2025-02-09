@@ -37,7 +37,7 @@ public class ChessEngine {
     public static final int SIZE = 16;
     public final int NUM_MOVES = 11968;
     
-    public ChessEngine() {
+    public ChessEngine(double learningRate) {
         // Load model if it exists, otherwise create a new one
         File modelFile = new File(MODEL_PATH);
         if (modelFile.exists()) {
@@ -50,7 +50,7 @@ public class ChessEngine {
             }
         } else {
             System.out.println("Creating new model...");
-            model = createNewModel();
+            model = createNewModel(learningRate);
             model.init();
         }
         try {
@@ -84,7 +84,7 @@ public class ChessEngine {
             model = loadModel();
         } else {
             System.out.println("Creating new model...");
-            model = createNewModel();
+            model = createNewModel(0.001);
         }
 
         for (int i = 0; i < 300; i++) {
@@ -117,15 +117,14 @@ public class ChessEngine {
         }
 
         // Save the model after training
-        saveModel(-1);
+        saveModel();
 
     }
 
-    //TODO: Update learning rate to be higher when PvC and lower when CvC. 
-    public MultiLayerNetwork createNewModel() {
+    public MultiLayerNetwork createNewModel(double learningRate) {
         return new MultiLayerNetwork(new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.XAVIER)
-                .updater(new Adam(0.001))
+                .updater(new Adam(learningRate))
                 .list()
                 .layer(0, new ConvolutionLayer.Builder(3, 3)
                         .nIn(NUM_CHANNELS) // channels for board
@@ -148,25 +147,21 @@ public class ChessEngine {
                 .build());
     }
 
-    public void saveModel(int moveNum) {
-        if (moveNum % 10 == 0) {
-            model.fit(new DataSet(currentBoard, target));
-        }
+    public void saveModel() {
+        System.out.println();
+        System.out.println("Starting to save model... Don't close program.");
         
-        if (moveNum % 50 == 0) {
-            System.out.println();
-            System.out.println("Starting to save model... Don't close program.");
-            String filePath = MODEL_PATH;
-            File file = new File(filePath);
-            try {
-                ModelSerializer.writeModel(model, file, true);
-            }
-            catch (IOException e) {
-                System.err.println("oops");
-            }
-            System.out.println("Model saved!");
-            System.out.println();
+        model.fit(new DataSet(currentBoard, target));
+        String filePath = MODEL_PATH;
+        File file = new File(filePath);
+        try {
+            ModelSerializer.writeModel(model, file, true);
         }
+        catch (IOException e) {
+            System.err.println("oops");
+        }
+        System.out.println("Model saved!");
+        System.out.println();
     }
 
     public MultiLayerNetwork loadModel() throws IOException {
