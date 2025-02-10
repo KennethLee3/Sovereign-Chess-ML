@@ -346,6 +346,16 @@ public class Board implements Cloneable {
         printBoard();
         return inputBoard;
     }
+    public boolean matchingSquareEmpty(Square inputSquare) {
+        Square matchingSquare = colorSQ[inputSquare.row][inputSquare.col].getMatchingSquare();
+        if (matchingSquare == null) {
+            return true;
+        }
+        if (getPieceValue(matchingSquare) == 0) {
+            return true;
+        }
+        return false;
+    }
     public boolean isInBounds(Square square) {
         return isInBounds(square.row, square.col);
     }
