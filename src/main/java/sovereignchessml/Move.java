@@ -5,6 +5,7 @@ public class Move implements Cloneable {
     public Square start;
     public Square end;
     
+    public int thisMove;
     public int moveNum;
     public double eval;
     
@@ -12,6 +13,11 @@ public class Move implements Cloneable {
         this.start = start;
         this.end = end;
         this.player = player;
+    }
+    public Move (int thisMove, int moveNum, double eval) {
+        this.thisMove = thisMove;
+        this.moveNum = moveNum;
+        this.eval = eval;
     }
     
     @Override

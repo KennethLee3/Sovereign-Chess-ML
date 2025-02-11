@@ -186,6 +186,7 @@ public class Board implements Cloneable {
 
     }
     private void initializeMoves() {
+        unretiredMoves = new Vector<>();
         int mapCounter = 0;
         for (int i = 0; i < SIZE; i++) {
             for (int j = 0; j < SIZE; j++) {

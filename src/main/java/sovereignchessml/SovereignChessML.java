@@ -9,7 +9,7 @@ import java.text.DecimalFormat;
 public class SovereignChessML extends JFrame {
     public final int SIZE = 16;
     public final int INVALID_MOVE_PENALTY = -2;
-    public final int ENGINE_HISTORY_DIST = 1;
+    public final int ENGINE_HISTORY_DIST = 5;
     public final boolean AUTO_PLAY = true;
     public final boolean CPU_VS_CPU = true;
 
@@ -165,7 +165,12 @@ public class SovereignChessML extends JFrame {
                     double reward = engine.computeReward(board, previousScore, getPositionEvaluation());
                     if (engine.predictions != null) {
                         engine.target = engine.predictions.dup();
-                        engine.target.putScalar(board.getNumFromMove(new Move(startLoc, endLoc, null)), reward);
+                        if (ENGINE_HISTORY_DIST > 1) {
+                            addMoveToQueue(board.getNumFromMove(new Move(startLoc, endLoc, null)), board.moveNum + 1, previousScore);
+                            retireMoves(board.moveNum + ENGINE_HISTORY_DIST);
+                        } else {
+                            engine.target.putScalar(engine.invertMove(board, board.getNumFromMove(new Move(startLoc, endLoc, null))), reward);
+                        }
                     }
                     Evaluation eval = conductEvaluation(board.players, board);
                     addMoveToHistory(board.possibleMoves.get(board.getNumFromMove(new Move(startLoc, endLoc, null))), null);
@@ -189,8 +194,13 @@ public class SovereignChessML extends JFrame {
                                 engine.target = engine.predictions.dup();
                             }
                             checkmate = engine.makeMove(board, engineMove) || checkmate;
-                            reward = engine.computeReward(board, previousScore, getPositionEvaluation());
-                            engine.target.putScalar(engineMove, reward); // Update target for the played move
+                            if (ENGINE_HISTORY_DIST > 1) {
+                                addMoveToQueue(engineMove, board.moveNum + 1, previousScore);
+                                retireMoves(board.moveNum + ENGINE_HISTORY_DIST);
+                            } else {
+                                reward = engine.computeReward(board, previousScore, getPositionEvaluation());
+                                engine.target.putScalar(engine.invertMove(board, engineMove), reward);
+                            }
                             eval = conductEvaluation(board.players, board);
                             addMoveToHistory(board.possibleMoves.get(engineMove), getFormattedEvaluation(eval.getScore()));
                             switchPlayer();
@@ -243,7 +253,8 @@ public class SovereignChessML extends JFrame {
                     }
                     boolean checkmate = engine.makeMove(board, engineMove);
                     if (ENGINE_HISTORY_DIST > 1) {
-                        // TODO
+                        addMoveToQueue(engineMove, board.moveNum + 1, previousScore);
+                        retireMoves(board.moveNum + ENGINE_HISTORY_DIST);
                     }
                     else {
                         double reward = engine.computeReward(board, previousScore, getPositionEvaluation());
@@ -330,10 +341,16 @@ public class SovereignChessML extends JFrame {
         moveHistoryPanel.repaint();
     }
     public void addMoveToQueue(int move, int moveNum, double priorReward) {
-        board.unretiredMoves.add(m);
+        board.unretiredMoves.add(new Move(move, moveNum, priorReward));
     }
-    public void retireMoves(int moveRetirePoint, ChessEngine engine) {
-        
+    public void retireMoves(int moveRetirePoint) {
+        if (board.unretiredMoves.isEmpty()) return;
+        while (board.unretiredMoves.firstElement().moveNum <= moveRetirePoint) {
+            Move m = board.unretiredMoves.remove(0);
+            double reward = engine.computeReward(board, m.eval, getPositionEvaluation());
+            engine.target.putScalar(engine.invertMove(board, m.thisMove), reward);
+            if (board.unretiredMoves.isEmpty()) return;
+        } 
     }
     private Evaluation conductEvaluation(Player[] players, Board board) {
         // Start timer
