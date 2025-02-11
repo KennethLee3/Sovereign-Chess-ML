@@ -40,6 +40,7 @@ public class Board implements Cloneable {
     public int moveNum;
     public Colors[] colorArray;
     Map<Integer, String> possibleMoves;
+    Vector<Move> unretiredMoves;
     
 
     public Board(JButton[][] squares) {

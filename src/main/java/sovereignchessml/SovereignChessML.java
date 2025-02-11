@@ -9,6 +9,7 @@ import java.text.DecimalFormat;
 public class SovereignChessML extends JFrame {
     public final int SIZE = 16;
     public final int INVALID_MOVE_PENALTY = -2;
+    public final int ENGINE_HISTORY_DIST = 1;
     public final boolean AUTO_PLAY = true;
     public final boolean CPU_VS_CPU = true;
 
@@ -241,8 +242,13 @@ public class SovereignChessML extends JFrame {
                         engine.target = engine.predictions.dup();
                     }
                     boolean checkmate = engine.makeMove(board, engineMove);
-                    double reward = engine.computeReward(board, previousScore, getPositionEvaluation());
-                    engine.target.putScalar(engine.invertMove(board, engineMove), reward); // Update target for the played move
+                    if (ENGINE_HISTORY_DIST > 1) {
+                        // TODO
+                    }
+                    else {
+                        double reward = engine.computeReward(board, previousScore, getPositionEvaluation());
+                        engine.target.putScalar(engine.invertMove(board, engineMove), reward);
+                    }
                     if (board.moveNum % 200 == 0) {
                         engine.saveModel();
                     }
@@ -322,6 +328,12 @@ public class SovereignChessML extends JFrame {
         
         moveHistoryPanel.revalidate();
         moveHistoryPanel.repaint();
+    }
+    public void addMoveToQueue(int move, int moveNum, double priorReward) {
+        board.unretiredMoves.add(m);
+    }
+    public void retireMoves(int moveRetirePoint, ChessEngine engine) {
+        
     }
     private Evaluation conductEvaluation(Player[] players, Board board) {
         // Start timer

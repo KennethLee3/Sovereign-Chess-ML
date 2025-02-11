@@ -5,6 +5,9 @@ public class Move implements Cloneable {
     public Square start;
     public Square end;
     
+    public int moveNum;
+    public double eval;
+    
     public Move (Square start, Square end, Player player) {
         this.start = start;
         this.end = end;
@@ -36,4 +39,5 @@ public class Move implements Cloneable {
         //this.end = board.getSquare(end.row, end.col);
         this.player = player;
     }
+    
 }
