@@ -8,8 +8,9 @@ import java.text.DecimalFormat;
 
 public class SovereignChessML extends JFrame {
     public final int SIZE = 16;
-    public final int INVALID_MOVE_PENALTY = -2;
-    public final int ENGINE_HISTORY_DIST = 5;
+    public final double INVALID_MOVE_PENALTY = -2;
+    public final double REPEATED_MOVE_PENALTY = -0.2;
+    public final int ENGINE_HISTORY_DIST = 3;
     public final boolean AUTO_PLAY = true;
     public final boolean CPU_VS_CPU = true;
 
@@ -167,7 +168,7 @@ public class SovereignChessML extends JFrame {
                         engine.target = engine.predictions.dup();
                         if (ENGINE_HISTORY_DIST > 1) {
                             addMoveToQueue(board.getNumFromMove(new Move(startLoc, endLoc, null)), board.moveNum + 1, previousScore);
-                            retireMoves(board.moveNum + ENGINE_HISTORY_DIST);
+                            retireMoves(board.moveNum - ENGINE_HISTORY_DIST);
                         } else {
                             engine.target.putScalar(engine.invertMove(board, board.getNumFromMove(new Move(startLoc, endLoc, null))), reward);
                         }
@@ -196,7 +197,7 @@ public class SovereignChessML extends JFrame {
                             checkmate = engine.makeMove(board, engineMove) || checkmate;
                             if (ENGINE_HISTORY_DIST > 1) {
                                 addMoveToQueue(engineMove, board.moveNum + 1, previousScore);
-                                retireMoves(board.moveNum + ENGINE_HISTORY_DIST);
+                                retireMoves(board.moveNum - ENGINE_HISTORY_DIST);
                             } else {
                                 reward = engine.computeReward(board, previousScore, getPositionEvaluation());
                                 engine.target.putScalar(engine.invertMove(board, engineMove), reward);
@@ -218,6 +219,7 @@ public class SovereignChessML extends JFrame {
                         board.currPlayer = 0;
                         board.updateBoard(startLoc, sqML, turnLabel);
                         moveHistoryPanel.removeAll();
+                        board.retiredMoves.clear();
                         printEvaluation(conductEvaluation(board.players, board));
                     }
                     
@@ -254,7 +256,7 @@ public class SovereignChessML extends JFrame {
                     boolean checkmate = engine.makeMove(board, engineMove);
                     if (ENGINE_HISTORY_DIST > 1) {
                         addMoveToQueue(engineMove, board.moveNum + 1, previousScore);
-                        retireMoves(board.moveNum + ENGINE_HISTORY_DIST);
+                        retireMoves(board.moveNum - ENGINE_HISTORY_DIST);
                     }
                     else {
                         double reward = engine.computeReward(board, previousScore, getPositionEvaluation());
@@ -277,6 +279,7 @@ public class SovereignChessML extends JFrame {
                         };
                         board.currPlayer = 0;
                         board.updateBoard(startLoc, sqML, turnLabel);
+                        board.retiredMoves.clear();
                         moveHistoryPanel.removeAll();
                     }
 
@@ -347,7 +350,13 @@ public class SovereignChessML extends JFrame {
         if (board.unretiredMoves.isEmpty()) return;
         while (board.unretiredMoves.firstElement().moveNum <= moveRetirePoint) {
             Move m = board.unretiredMoves.remove(0);
+            board.retiredMoves.add(m);
             double reward = engine.computeReward(board, m.eval, getPositionEvaluation());
+            for (Move otherMove : board.retiredMoves) {
+                if (m.thisMove == otherMove.thisMove) {
+                    reward = reward + REPEATED_MOVE_PENALTY;
+                }
+            }
             engine.target.putScalar(engine.invertMove(board, m.thisMove), reward);
             if (board.unretiredMoves.isEmpty()) return;
         } 

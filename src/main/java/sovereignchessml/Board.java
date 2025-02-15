@@ -41,6 +41,7 @@ public class Board implements Cloneable {
     public Colors[] colorArray;
     Map<Integer, String> possibleMoves;
     Vector<Move> unretiredMoves;
+    Vector<Move> retiredMoves;
     
 
     public Board(JButton[][] squares) {
@@ -187,6 +188,7 @@ public class Board implements Cloneable {
     }
     private void initializeMoves() {
         unretiredMoves = new Vector<>();
+        retiredMoves = new Vector<>();
         int mapCounter = 0;
         for (int i = 0; i < SIZE; i++) {
             for (int j = 0; j < SIZE; j++) {
