@@ -10,9 +10,9 @@ public class SovereignChessML extends JFrame {
     public final int SIZE = 16;
     public final double INVALID_MOVE_PENALTY = -2;
     public final double REPEATED_MOVE_PENALTY = -0.2;
-    public final int ENGINE_HISTORY_DIST = 3;
+    public final int ENGINE_HISTORY_DIST = 2;
     public final boolean AUTO_PLAY = true;
-    public final boolean CPU_VS_CPU = true;
+    public final boolean CPU_VS_CPU = false;
 
     private JButton[][] sqML;
     private JProgressBar progressBar;
@@ -270,7 +270,7 @@ public class SovereignChessML extends JFrame {
 
                     // Switch player and update board
                     switchPlayer();
-                    if (checkmate) {
+                    if (checkmate || board.moveNum > 1000) {
                         engine.saveModel();
                         board = new Board(sqML);
                         board.players = new Player[]{
@@ -328,7 +328,7 @@ public class SovereignChessML extends JFrame {
         }
         
         // Add new move. 
-        JLabel playerLabel = new JLabel(playerMove);
+        JLabel playerLabel = new JLabel(board.latestMove);
         playerLabel.setForeground(Color.WHITE);
         moveHistoryPanel.add(playerLabel, gbc);
         

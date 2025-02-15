@@ -38,6 +38,7 @@ public class Board implements Cloneable {
     public Player[] players;
     public int currPlayer;
     public int moveNum;
+    public String latestMove;
     public Colors[] colorArray;
     Map<Integer, String> possibleMoves;
     Vector<Move> unretiredMoves;
@@ -332,15 +333,15 @@ public class Board implements Cloneable {
         if (getPieceValue(end) == KING) {
             checkmate = true;
         }
-        
+        // Set latest move.
+        latestMove = convertToAlgebraicNotation(start, end);
         // Move piece.
         pieces[end.row][end.col] = pieces[start.row][start.col];
         pieces[start.row][start.col] = EMPTY;
         // Promote pawn.
         if (isPromotionReady(end)) {
             pieces[end.row][end.col] += (QUEEN - PAWN);
-        }
-        
+        }        
         return checkmate;
     }
     public boolean movePiece(Move m) {
@@ -572,6 +573,24 @@ public class Board implements Cloneable {
     }
     public Piece makePiece(Square square) {
         return makePiece(pieces[square.row][square.col]);
+    }
+    public String convertToAlgebraicNotation(Square start, Square end) {
+        String move = "";
+        // Get the piece that's moving. 
+        if (getPieceValue(start) > PAWN) {
+            move += (char)(makePiece(start).getPrintChar() + 'A' - 'a');
+        }
+        // Check if a capture is occurring. 
+        if (getPieceValue(end) > EMPTY) {
+            move += "x";
+        }
+        // Append the destination square coordinates. 
+        move = move + (char)('a' + end.col) + (1 + end.row);
+        // Check if move captures the king. 
+        if (getPieceValue(end) == KING) {
+            move += "#";
+        }
+        return move;
     }
 
 }
