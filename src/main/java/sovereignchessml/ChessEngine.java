@@ -147,6 +147,10 @@ public class ChessEngine {
                 .build());
     }
 
+    public void fitModel() {
+        model.fit(new DataSet(currentBoard, target));
+    }
+    
     public void saveModel() {
         System.out.println();
         System.out.println("Starting to save model... Don't close program.");
@@ -175,9 +179,12 @@ public class ChessEngine {
         double reward = 0.0;
         if (board.currPlayer == 0) reward = newScore - oldScore;
         if (board.currPlayer == 1) reward = -1 * (newScore - oldScore);
+        return reward; // Example reward for demonstration
+    }
+    
+    public void printReward(double reward) {
         DecimalFormat df = new DecimalFormat("#.##");
         System.out.println("This is the reward for that move: " + df.format(reward));
-        return reward; // Example reward for demonstration
     }
 
     public INDArray getCurrentBoardState(Board board) {

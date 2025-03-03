@@ -6,13 +6,17 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.DecimalFormat;
 
+
 public class SovereignChessML extends JFrame {
+    enum PlayerType {HUMAN, ML, HEURISTIC}
+    public final static PlayerType p1 = PlayerType.ML;
+    public final static PlayerType p2 = PlayerType.ML;
+    
     public final int SIZE = 16;
     public final double INVALID_MOVE_PENALTY = -2;
-    public final double REPEATED_MOVE_PENALTY = -0.2;
-    public final int ENGINE_HISTORY_DIST = 2;
-    public final boolean AUTO_PLAY = true;
-    public final boolean CPU_VS_CPU = false;
+    public final double REPEATED_MOVE_PENALTY = -4;
+    public final int ENGINE_HISTORY_DIST = 1;
+    public final int MOVE_PAUSE_TIME = 0;
 
     private JButton[][] sqML;
     private JProgressBar progressBar;
@@ -33,20 +37,11 @@ public class SovereignChessML extends JFrame {
         initComponentsX();
         
         board = new Board(sqML);
-        if (this.CPU_VS_CPU) {
-            engine = new ChessEngine(0.001);
-            board.players = new Player[]{
-                new Player("Computer1", board.WHITE),
-                new Player("Computer2", board.BLACK)
-            };
-        }
-        else {
-            engine = new ChessEngine(0.01);
-            board.players = new Player[]{
-                new Player("Player", board.WHITE),
-                new Player("Computer", board.BLACK)
-            };
-        }
+        engine = new ChessEngine(0.001);
+        board.players = new Player[]{
+            new Player(p1.toString(), board.WHITE),
+            new Player(p2.toString(), board.BLACK)
+        };
         board.currPlayer = 0;
         board.updateBoard(startLoc, sqML, turnLabel);
         //board.updatePieces();
@@ -179,7 +174,7 @@ public class SovereignChessML extends JFrame {
                     startLoc = null;
                     board.updateBoard(startLoc, sqML, turnLabel);
                     if (board.currPlayer == 1) {
-                        if (AUTO_PLAY) {
+                        if (p2 != PlayerType.HUMAN) {
                             int moveIterator = 0;
                             previousScore = getPositionEvaluation();
                             engine.currentBoard = engine.getCurrentBoardState(board);
@@ -200,6 +195,7 @@ public class SovereignChessML extends JFrame {
                                 retireMoves(board.moveNum - ENGINE_HISTORY_DIST);
                             } else {
                                 reward = engine.computeReward(board, previousScore, getPositionEvaluation());
+                                engine.printReward(reward);
                                 engine.target.putScalar(engine.invertMove(board, engineMove), reward);
                             }
                             eval = conductEvaluation(board.players, board);
@@ -232,70 +228,76 @@ public class SovereignChessML extends JFrame {
             }
         }
     }
-    
+
     private void computerVScomputer() {
         new Thread(() -> {
             while (true) {
                 try {
-                    int moveIterator = 0;
-                    double previousScore = getPositionEvaluation();
-                    engine.currentBoard = engine.getCurrentBoardState(board);
-                    engine.predictions = engine.model.output(engine.currentBoard).reshape(1, engine.NUM_MOVES);
-                    int[] sortedPredictions = engine.getSortedPredictions();
-                    //int engineMove = engine.predictions.argMax(1).getInt(0);
-                    int engineMove = sortedPredictions[moveIterator];
-                    engineMove = engine.invertMove(board, engineMove);
-                    engine.target = engine.predictions.dup();
-                    while (!engine.checkMove(board, engineMove)) {
-                        engine.target.putScalar(engineMove, INVALID_MOVE_PENALTY);
-                        moveIterator++;
-                        engineMove = sortedPredictions[moveIterator];
-                        engineMove = engine.invertMove(board, engineMove);
-                        engine.target = engine.predictions.dup();
+                    Thread.sleep(MOVE_PAUSE_TIME);
+                    if (getCurrentPlayerType() == PlayerType.ML) {
+                        machineLearningMove();
                     }
-                    boolean checkmate = engine.makeMove(board, engineMove);
-                    if (ENGINE_HISTORY_DIST > 1) {
-                        addMoveToQueue(engineMove, board.moveNum + 1, previousScore);
-                        retireMoves(board.moveNum - ENGINE_HISTORY_DIST);
-                    }
-                    else {
-                        double reward = engine.computeReward(board, previousScore, getPositionEvaluation());
-                        engine.target.putScalar(engine.invertMove(board, engineMove), reward);
-                    }
-                    if (board.moveNum % 200 == 0) {
-                        engine.saveModel();
-                    }
-                    Evaluation eval = conductEvaluation(board.players, board);
-                    addMoveToHistory(board.possibleMoves.get(engineMove), getFormattedEvaluation(eval.getScore()));
-
-                    // Switch player and update board
-                    switchPlayer();
-                    if (checkmate || board.moveNum > 1000) {
-                        engine.saveModel();
-                        board = new Board(sqML);
-                        board.players = new Player[]{
-                            new Player("Computer1", board.WHITE),
-                            new Player("Computer2", board.BLACK)
-                        };
-                        board.currPlayer = 0;
-                        board.updateBoard(startLoc, sqML, turnLabel);
-                        board.retiredMoves.clear();
-                        moveHistoryPanel.removeAll();
-                    }
-
-                    // Schedule GUI updates on the EDT
-                    SwingUtilities.invokeLater(() -> {
-                        board.updateBoard(null, sqML, turnLabel);
-                        printEvaluation(eval);
-                    });
-
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }).start();
     }
+    private void machineLearningMove() {
+        int moveIterator = 0;
+        double previousScore = getPositionEvaluation();
+        engine.currentBoard = engine.getCurrentBoardState(board);
+        engine.predictions = engine.model.output(engine.currentBoard).reshape(1, engine.NUM_MOVES);
+        int[] sortedPredictions = engine.getSortedPredictions();
+        //int engineMove = engine.predictions.argMax(1).getInt(0);
+        int engineMove = sortedPredictions[moveIterator];
+        engineMove = engine.invertMove(board, engineMove);
+        engine.target = engine.predictions.dup();
+        while (!engine.checkMove(board, engineMove)) {
+            engine.target.putScalar(engineMove, INVALID_MOVE_PENALTY);
+            moveIterator++;
+            engineMove = sortedPredictions[moveIterator];
+            engineMove = engine.invertMove(board, engineMove);
+            engine.target = engine.predictions.dup();
+        }
+        boolean checkmate = engine.makeMove(board, engineMove);
+        Move currMove = addMoveToQueue(engineMove, board.moveNum + 1, previousScore);
+        retireMoves(board.moveNum - ENGINE_HISTORY_DIST);
+        if (board.moveNum % 200 == 0) {
+            engine.fitModel();
+        }
+        Evaluation eval = conductEvaluation(board.players, board);
+        addMoveToHistory(board.possibleMoves.get(engineMove), getFormattedEvaluation(eval.getScore()));
 
+        // Switch player and update board
+        switchPlayer();
+        
+        // Count repetitions
+        int numRepetitions = 0;
+        for (Move m : board.retiredMoves) {
+            //if (m.start == currMove.start && m.end == currMove.end) numRepetitions++;
+        }
+        
+        if (checkmate || board.moveNum >= 1000 || numRepetitions >= 8) {
+            engine.saveModel();
+            board = new Board(sqML);
+            board.players = new Player[]{
+                new Player(p1.toString(), board.WHITE),
+                new Player(p2.toString(), board.BLACK)
+            };
+            board.currPlayer = 0;
+            board.updateBoard(startLoc, sqML, turnLabel);
+            board.retiredMoves.clear();
+            moveHistoryPanel.removeAll();
+        }
+
+        // Schedule GUI updates on the EDT
+        SwingUtilities.invokeLater(() -> {
+            board.updateBoard(null, sqML, turnLabel);
+            printEvaluation(eval);
+        });
+
+    }
     private boolean isValidStartLoc(int row, int col) {
         boolean valid = false;
         // Check if you control the piece you've selected. 
@@ -343,8 +345,10 @@ public class SovereignChessML extends JFrame {
         moveHistoryPanel.revalidate();
         moveHistoryPanel.repaint();
     }
-    public void addMoveToQueue(int move, int moveNum, double priorReward) {
-        board.unretiredMoves.add(new Move(move, moveNum, priorReward));
+    public Move addMoveToQueue(int move, int moveNum, double priorReward) {
+        Move newMove = new Move(move, moveNum, priorReward);
+        board.unretiredMoves.add(newMove);
+        return newMove;
     }
     public void retireMoves(int moveRetirePoint) {
         if (board.unretiredMoves.isEmpty()) return;
@@ -357,6 +361,7 @@ public class SovereignChessML extends JFrame {
                     reward = reward + REPEATED_MOVE_PENALTY;
                 }
             }
+            engine.printReward(reward);
             engine.target.putScalar(engine.invertMove(board, m.thisMove), reward);
             if (board.unretiredMoves.isEmpty()) return;
         } 
@@ -383,6 +388,12 @@ public class SovereignChessML extends JFrame {
         progressBar.setString(getFormattedEvaluation(eval.getScore()));
         progressBar.setValue(eval.getProgressBarEvaluation(eval.getScore()));
     }
+    private PlayerType getCurrentPlayerType() {
+        if (board.currPlayer == 0) {
+            return p1;
+        }
+        return p2;
+    }
     public Player getCurrentPlayer() {
         return board.players[board.currPlayer];
     }
@@ -398,7 +409,7 @@ public class SovereignChessML extends JFrame {
                 game.setSize(1000,800);
                 game.setVisible(true);
                 
-                if (game.CPU_VS_CPU) {
+                if (p1 != PlayerType.HUMAN && p2 != PlayerType.HUMAN) {
                     game.computerVScomputer();
                     return;
                 }
