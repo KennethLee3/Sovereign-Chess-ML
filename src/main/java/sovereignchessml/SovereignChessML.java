@@ -4,18 +4,22 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Vector;
 import java.text.DecimalFormat;
 
 
 public class SovereignChessML extends JFrame {
     enum PlayerType {HUMAN, ML, HEURISTIC}
-    public final static PlayerType p1 = PlayerType.ML;
-    public final static PlayerType p2 = PlayerType.ML;
+    public final static PlayerType p1 = PlayerType.HUMAN;
+    public final static PlayerType p2 = PlayerType.HEURISTIC;
     
     public final int SIZE = 16;
     public final double INVALID_MOVE_PENALTY = -2;
     public final double REPEATED_MOVE_PENALTY = -4;
     public final int ENGINE_HISTORY_DIST = 1;
+    public final int HEURISTIC_SEARCH_DEPTH = 3;
+    public final int MIN = -5000;
+    public final int MAX = 5000;
     public final int MOVE_PAUSE_TIME = 0;
 
     private JButton[][] sqML;
@@ -175,6 +179,13 @@ public class SovereignChessML extends JFrame {
                     board.updateBoard(startLoc, sqML, turnLabel);
                     if (board.currPlayer == 1) {
                         if (p2 != PlayerType.HUMAN) {
+                            if (getCurrentPlayerType() == PlayerType.ML) {
+                                machineLearningMove();
+                            }
+                            if (getCurrentPlayerType() == PlayerType.HEURISTIC) {
+                                heuristicMove();
+                            }
+                            /*
                             int moveIterator = 0;
                             previousScore = getPositionEvaluation();
                             engine.currentBoard = engine.getCurrentBoardState(board);
@@ -202,22 +213,22 @@ public class SovereignChessML extends JFrame {
                             addMoveToHistory(board.possibleMoves.get(engineMove), getFormattedEvaluation(eval.getScore()));
                             switchPlayer();
                             board.updateBoard(null, sqML, turnLabel);
+                            */
                         }
                     }
-                    printEvaluation(eval);
                     if (checkmate) {
-                        engine.saveModel();
+                        //engine.saveModel();
                         board = new Board(sqML);
                         board.players = new Player[]{
                             new Player("Player", board.WHITE),
                             new Player("Computer", board.BLACK)
                         };
                         board.currPlayer = 0;
-                        board.updateBoard(startLoc, sqML, turnLabel);
                         moveHistoryPanel.removeAll();
                         board.retiredMoves.clear();
-                        printEvaluation(conductEvaluation(board.players, board));
                     }
+                    printEvaluation(eval);
+                    board.updateBoard(startLoc, sqML, turnLabel);
                     
                 }
                 else {
@@ -234,16 +245,39 @@ public class SovereignChessML extends JFrame {
             while (true) {
                 try {
                     Thread.sleep(MOVE_PAUSE_TIME);
+                    boolean checkmate = false;
                     if (getCurrentPlayerType() == PlayerType.ML) {
-                        machineLearningMove();
+                        checkmate = machineLearningMove();
                     }
+                    if (getCurrentPlayerType() == PlayerType.HEURISTIC) {
+                        checkmate = heuristicMove();
+                    }
+                    
+                    if (checkmate || board.moveNum >= 1000) {
+                        board = new Board(sqML);
+                        board.players = new Player[]{
+                            new Player(p1.toString(), board.WHITE),
+                            new Player(p2.toString(), board.BLACK)
+                        };
+                        board.currPlayer = 0;
+                        board.updateBoard(startLoc, sqML, turnLabel);
+                        board.retiredMoves.clear();
+                        moveHistoryPanel.removeAll();
+                    }
+                    
+                    // Schedule GUI updates on the EDT
+                    SwingUtilities.invokeLater(() -> {
+                        board.updateBoard(null, sqML, turnLabel);
+                        printEvaluation(conductEvaluation(board.players, board));
+                    });
+                    
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }).start();
     }
-    private void machineLearningMove() {
+    private boolean machineLearningMove() {
         int moveIterator = 0;
         double previousScore = getPositionEvaluation();
         engine.currentBoard = engine.getCurrentBoardState(board);
@@ -277,7 +311,7 @@ public class SovereignChessML extends JFrame {
         for (Move m : board.retiredMoves) {
             //if (m.start == currMove.start && m.end == currMove.end) numRepetitions++;
         }
-        
+        /*
         if (checkmate || board.moveNum >= 1000 || numRepetitions >= 8) {
             engine.saveModel();
             board = new Board(sqML);
@@ -296,7 +330,100 @@ public class SovereignChessML extends JFrame {
             board.updateBoard(null, sqML, turnLabel);
             printEvaluation(eval);
         });
+        */
+        
+        return checkmate;
+    }
+    private boolean heuristicMove() {
+        double best = MIN + (2 * board.currPlayer * MAX);
+        Board bestBoard = null;
 
+        Vector<Board> children = board.getAllChildBoards();
+        for (Board childBoard : children) {
+            if (board.currPlayer == 0) {
+                double val = minimax(1, childBoard, false, MIN, MAX);
+                if (val > best) {
+                    best = val;
+                    bestBoard = childBoard;
+                }
+            }
+            if (board.currPlayer == 1) {
+                double val = minimax(1, childBoard, true, MIN, MAX);
+                if (val < best) {
+                    best = val;
+                    bestBoard = childBoard;
+                }
+            }
+        }
+            
+        //double previousScore = getPositionEvaluation();
+        int heuristicMove = bestBoard.moveNum;
+        Move m = board.getMoveFromNum(heuristicMove);
+        boolean checkmate = board.movePiece(m.start, m.end, board.players[board.currPlayer]);
+        //addMoveToQueue(heuristicMove, board.moveNum + 1, previousScore);
+        Evaluation eval = conductEvaluation(board.players, board);
+        addMoveToHistory(board.possibleMoves.get(heuristicMove), getFormattedEvaluation(eval.getScore()));
+
+        // Switch player and update board
+        switchPlayer();
+        /*
+        if (checkmate || board.moveNum >= 1000) {
+            board = new Board(sqML);
+            board.players = new Player[]{
+                new Player(p1.toString(), board.WHITE),
+                new Player(p2.toString(), board.BLACK)
+            };
+            board.currPlayer = 0;
+            board.updateBoard(startLoc, sqML, turnLabel);
+            board.retiredMoves.clear();
+            moveHistoryPanel.removeAll();
+        }
+
+        // Schedule GUI updates on the EDT
+        SwingUtilities.invokeLater(() -> {
+            board.updateBoard(null, sqML, turnLabel);
+            printEvaluation(eval);
+        });
+        */
+        
+        return checkmate;
+    }
+    private double minimax(int depth, Board parentBoard, Boolean maximizingPlayer, double alpha, double beta) {
+        // Terminating condition. 
+        if (depth == HEURISTIC_SEARCH_DEPTH) {
+            return parentBoard.evaluatePosition(parentBoard.players);
+        }
+        if (maximizingPlayer) {
+            double best = MIN;
+
+            Vector<Board> children = parentBoard.getAllChildBoards();
+            for (Board childBoard : children) {
+                double val = minimax(depth + 1, childBoard, false, alpha, beta);
+                best = Math.max(best, val);
+                alpha = Math.max(alpha, best);
+
+                // Alpha Beta Pruning
+                if (beta <= alpha) {
+                    break;
+                }
+            }
+            return best;
+        } else {
+            double best = MAX;
+
+            Vector<Board> children = parentBoard.getAllChildBoards();
+            for (Board childBoard : children) {
+                double val = minimax(depth + 1, childBoard, true, alpha, beta);
+                best = Math.min(best, val);
+                beta = Math.min(beta, best);
+
+                // Alpha Beta Pruning
+                if (beta <= alpha) {
+                    break;
+                }
+            }
+            return best;
+        }
     }
     private boolean isValidStartLoc(int row, int col) {
         boolean valid = false;

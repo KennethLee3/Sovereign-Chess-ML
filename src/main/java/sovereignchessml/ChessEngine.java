@@ -261,7 +261,7 @@ public class ChessEngine {
                     Square start = new Square(i, j);
                     Player currPlayer = board.players[board.currPlayer];
                     if (currPlayer.checkColorControl(board.getPieceColor(start))) {
-                        allMoves.addAll(board.getAllLegalMoves(start, board.players, board.currPlayer));
+                        allMoves.addAll(board.getAllPieceLegalMoves(start, board.players, board.currPlayer));
                     }
                 }
             }

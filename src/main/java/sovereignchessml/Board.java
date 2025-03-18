@@ -75,6 +75,7 @@ public class Board implements Cloneable {
                     clonedBoard.colorSQ[i][j] = this.colorSQ[i][j].clone();
                 }
             }
+            clonedBoard.players = players;
 
             return clonedBoard;
         } catch (CloneNotSupportedException e) {
@@ -479,7 +480,7 @@ public class Board implements Cloneable {
     public Player getNextPlayer() {
         return players[(currPlayer + 1) % 2];
     }
-    public Vector<Move> getAllLegalMoves(Square start, Player[] players, int currPlayer) {
+    public Vector<Move> getAllPieceLegalMoves(Square start, Player[] players, int currPlayer) {
         Piece thisPiece = makePiece(start);
         Vector<Move> allMoves = new Vector<>();
         Vector<Square> allEndSquares = thisPiece.getAllPossibleMoves(this, start);
@@ -494,6 +495,58 @@ public class Board implements Cloneable {
             }
         }
         return allMoves;
+    }
+    public Vector<Move> getAllBoardLegalMoves(Player[] players, int currPlayer) {
+        Vector<Move> allMoves = new Vector<>();
+        Player p = getCurrentPlayer();
+        for (int i = 0; i < SIZE; i++) {
+            for (int j = 0; j < SIZE; j++) {
+                if (getPieceValue(pieces[i][j]) != EMPTY) {
+                    if (p.checkColorControl(getPieceColor(pieces[i][j]))) {
+                        allMoves.addAll(getAllPieceLegalMoves(new Square(i, j), players, currPlayer));
+                    }
+                }
+            }
+        }
+        return allMoves;
+    }
+    public Vector<Board> getAllChildBoards() {
+        Vector<Board> allBoards = new Vector<>();
+        Vector<Move> allMoves = getAllBoardLegalMoves(players, currPlayer);
+        for (Move m : allMoves) {
+            Board b = this.clone();
+            b.currPlayer = (currPlayer + 1) % 2;
+            b.movePiece(m);
+            b.moveNum = getNumFromMove(m);
+            allBoards.add(b);
+        }
+        return allBoards;
+    } 
+    public double evaluatePosition(Player[] players) {
+        double player1 = evaluatePlayer(players[0]);
+        double player2 = evaluatePlayer(players[1]);
+        return player1 - player2;
+    }
+    public double evaluatePlayer(Player p) {
+        double score = 0;
+        for (int i = 0; i < 16; i++) {
+            for (int j = 0; j < 16; j++) {
+                int piece = pieces[i][j];
+                if (p.checkColorControl(getPieceColor(piece))) {
+                    double pieceValue = getPieceValue(colorSQ[i][j], makePiece(piece));
+                    if (p.getColorOwn() != getPieceColor(piece)) {
+                        pieceValue *= 0.4;
+                    }
+                    score += pieceValue;
+                }
+            }
+        }
+        return score;
+    }
+    public double getPieceValue(Square square, Piece piece) {
+        double value = piece.getValue();
+        value *= piece.positionMultiplier(this, square);
+        return value;
     }
     public int getNumFromMove(Move m) {
         String s = "" + (char)(m.start.row+'a') + (char)(m.start.col+'a') + (char)(m.end.row+'a') + (char)(m.end.col+'a');
